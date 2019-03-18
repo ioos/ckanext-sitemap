@@ -44,8 +44,16 @@ class SitemapController(BaseController):
             loc = etree.SubElement(url, 'loc')
             pkg_url = url_for(controller='package', action="read", id=pkg.name)
             loc.text = config.get('ckan.site_url') + pkg_url
-            lastmod = etree.SubElement(url, 'lastmod')
-            lastmod.text = pkg.latest_related_revision.timestamp.strftime('%Y-%m-%d')
+            try:
+                last_rev_time = (pkg.latest_related_revision
+                                 .timestamp.strftime('%Y-%m-%d'))
+                lastmod = etree.SubElement(url, 'lastmod')
+                lastmod.text = last_rev_time
+            # if we can't get last revision time, just exclude lastmod,
+            # as it's an optional element anyhow
+            except:
+                log.exception("Exception while fetching latest revision "
+                              "time for dataset {}:".format(pkg.name))
             self._create_language_alternatives(pkg_url, url)
             # for res in pkg.resources:
             #     url = etree.SubElement(root, 'url')
@@ -61,4 +69,3 @@ class SitemapController(BaseController):
 
     def view(self):
         return self._render_sitemap()
-
